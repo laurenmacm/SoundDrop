@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SoundDrop">
+<meta name="theme-color" content="#0a0a0a">
+<title>SoundDrop</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1e1e1e;
+    --surface3: #282828;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0f0f0;
+    --text2: #a0a0a0;
+    --text3: #606060;
+    --green: #1DB954;
+    --green-dim: rgba(29,185,84,0.15);
+    --green-dim2: rgba(29,185,84,0.08);
+    --accent: #1DB954;
+    --safe-top: env(safe-area-inset-top, 44px);
+    --safe-bottom: env(safe-area-inset-bottom, 34px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont, sans-serif; overflow: hidden; }
+
+  #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+  /* HEADER */
+  .header {
+    padding: calc(var(--safe-top) + 12px) 20px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 0.5px solid var(--border);
+    position: relative; z-index: 10;
+  }
+  .header-logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 32px; height: 32px; background: var(--green); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo-icon svg { width: 18px; height: 18px; fill: #000; }
+  .logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+  .logo-text span { color: var(--green); }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: 0.5px solid var(--border2);
+    background: var(--surface2); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text2); font-size: 18px; transition: all 0.15s;
+  }
+  .icon-btn:active { transform: scale(0.92); background: var(--surface3); }
+
+  /* TABS */
+  .tabs {
+    display: flex; background: var(--surface); border-bottom: 0.5px solid var(--border);
+  }
+  .tab {
+    flex: 1; padding: 12px 8px; text-align: center; font-size: 13px; font-weight: 500;
+    color: var(--text3); cursor: pointer; transition: all 0.15s; position: relative;
+    letter-spacing: 0.2px;
+  }
+  .tab.active { color: var(--green); }
+  .tab.active::after {
+    content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
+    height: 2px; background: var(--green); border-radius: 2px 2px 0 0;
+  }
+
+  /* FEED */
+  .feed {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 0 calc(var(--safe-bottom) + 80px);
+  }
+  .feed::-webkit-scrollbar { display: none; }
+
+  /* SONG CARD */
+  .song-card {
+    margin: 8px 14px; border-radius: 16px;
+    background: var(--surface); border: 0.5px solid var(--border);
+    overflow: hidden; animation: cardIn 0.3s ease;
+  }
+  @keyframes cardIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: none; } }
+
+  .card-header { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0;
+  }
+  .card-meta { flex: 1; min-width: 0; }
+  .card-sender { font-size: 14px; font-weight: 600; color: var(--text); }
+  .card-time { font-size: 12px; color: var(--text3); margin-top: 1px; }
+  .card-note { font-size: 13px; color: var(--text2); font-style: italic; padding: 0 14px 10px; line-height: 1.4; }
+
+  /* SPOTIFY EMBED AREA */
+  .spotify-embed {
+    margin: 0 14px 10px;
+    border-radius: 12px; overflow: hidden;
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+  }
+  .spotify-embed iframe { display: block; border: none; width: 100%; }
+  .spotify-fallback {
+    display: flex; align-items: center; gap: 12px; padding: 12px;
+    cursor: pointer;
+  }
+  .spotify-art {
+    width: 52px; height: 52px; border-radius: 8px; object-fit: cover;
+    background: var(--surface3); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+  }
+  .spotify-info { flex: 1; min-width: 0; }
+  .spotify-track { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .spotify-artist { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .spotify-logo { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+  .spotify-logo svg { width: 14px; height: 14px; fill: var(--green); }
+  .spotify-logo span { font-size: 11px; color: var(--green); font-weight: 600; }
+
+  /* REACTIONS */
+  .reactions-row {
+    padding: 8px 14px 12px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .reaction-chip {
+    display: flex; align-items: center; gap: 4px;
+    padding: 5px 10px; border-radius: 20px;
+    border: 0.5px solid var(--border); background: var(--surface2);
+    font-size: 16px; cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .reaction-chip.mine { border-color: var(--green); background: var(--green-dim); }
+  .reaction-chip:active { transform: scale(0.9); }
+  .reaction-count { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .add-reaction-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 0.5px dashed var(--border2); background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text3); font-size: 16px; transition: all 0.15s;
+  }
+  .add-reaction-btn:active { background: var(--surface2); }
+
+  /* REACTION PICKER */
+  .reaction-picker {
+    position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .reaction-picker.open { opacity: 1; pointer-events: all; }
+  .picker-sheet {
+    width: 100%; background: var(--surface); border-radius: 24px 24px 0 0;
+    border-top: 0.5px solid var(--border2);
+    padding: 0 0 calc(var(--safe-bottom) + 16px);
+    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .reaction-picker.open .picker-sheet { transform: translateY(0); }
+  .picker-handle { width: 36px; height: 4px; background: var(--surface3); border-radius: 2px; margin: 12px auto 16px; }
+  .picker-title { font-size: 13px; font-weight: 600; color: var(--text2); text-align: center; margin-bottom: 16px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .picker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 16px 8px; }
+  .picker-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 10px 6px; border-radius: 14px; cursor: pointer;
+    background: var(--surface2); border: 0.5px solid var(--border);
+    transition: all 0.15s; text-align: center;
+  }
+  .picker-item:active { transform: scale(0.92); background: var(--surface3); }
+  .picker-emoji { font-size: 26px; }
+  .picker-label { font-size: 10px; color: var(--text3); line-height: 1.2; }
+
+  /* LEGEND */
+  .legend-section { padding: 12px 14px 8px; }
+  .legend-title { font-size: 12px; font-weight: 600; color: var(--text3); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px; }
+  .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .legend-item {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+    background: var(--surface2); border-radius: 12px; border: 0.5px solid var(--border);
+  }
+  .legend-emoji { font-size: 20px; }
+  .legend-info { }
+  .legend-meaning { font-size: 13px; font-weight: 600; color: var(--text); }
+  .legend-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+  /* SEND PANEL */
+  .send-panel {
+    position: fixed; inset: 0; z-index: 200; display: flex; align-items: flex-end;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .send-panel.open { opacity: 1; pointer-events: all; }
+  .send-sheet {
+    width: 100%; background: var(--surface); border-radius: 24px 24px 0 0;
+    border-top: 0.5px solid var(--border2);
+    padding: 0 20px calc(var(--safe-bottom) + 20px);
+    transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 85vh; overflow-y: auto;
+  }
+  .send-panel.open .send-sheet { transform: translateY(0); }
+  .send-handle { width: 36px; height: 4px; background: var(--surface3); border-radius: 2px; margin: 12px auto 20px; }
+  .send-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--text); letter-spacing: -0.3px; }
+
+  .field-label { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .text-input {
+    width: 100%; background: var(--surface2); border: 0.5px solid var(--border2);
+    border-radius: 12px; padding: 13px 14px; color: var(--text); font-size: 15px;
+    outline: none; font-family: inherit; transition: border-color 0.15s;
+    -webkit-appearance: none; appearance: none;
+  }
+  .text-input:focus { border-color: var(--green); }
+  .text-input::placeholder { color: var(--text3); }
+  .field-group { margin-bottom: 16px; }
+
+  .friend-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .friend-chip {
+    display: flex; align-items: center; gap: 6px; padding: 7px 12px;
+    border-radius: 20px; border: 0.5px solid var(--border); background: var(--surface2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .friend-chip.selected { border-color: var(--green); background: var(--green-dim); }
+  .friend-chip-avatar { width: 20px; height: 20px; border-radius: 50%; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .friend-chip-name { font-size: 13px; color: var(--text); font-weight: 500; }
+
+  .send-btn {
+    width: 100%; padding: 16px; background: var(--green); border: none;
+    border-radius: 14px; color: #000; font-size: 16px; font-weight: 700;
+    font-family: inherit; cursor: pointer; margin-top: 8px; letter-spacing: -0.2px;
+    transition: all 0.15s; -webkit-appearance: none; appearance: none;
+  }
+  .send-btn:active { transform: scale(0.97); opacity: 0.9; }
+  .send-btn:disabled { opacity: 0.4; }
+
+  /* FAB */
+  .fab {
+    position: fixed; bottom: calc(var(--safe-bottom) + 20px); right: 20px; z-index: 50;
+    width: 56px; height: 56px; border-radius: 50%; background: var(--green);
+    border: none; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: 0 4px 20px rgba(29,185,84,0.4);
+    transition: all 0.15s; -webkit-appearance: none; appearance: none;
+  }
+  .fab:active { transform: scale(0.92); }
+  .fab svg { width: 24px; height: 24px; fill: #000; }
+
+  /* FRIENDS TAB */
+  .friends-list { padding: 12px 14px; }
+  .friend-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    background: var(--surface); border-radius: 14px; margin-bottom: 8px;
+    border: 0.5px solid var(--border);
+  }
+  .friend-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+  .friend-info { flex: 1; }
+  .friend-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .friend-stats { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .friend-status { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .add-friend-btn {
+    width: 100%; padding: 14px; background: transparent; border: 0.5px dashed var(--border2);
+    border-radius: 14px; color: var(--text2); font-size: 14px; font-weight: 500;
+    font-family: inherit; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; gap: 8px; margin-top: 4px; transition: all 0.15s;
+  }
+  .add-friend-btn:active { background: var(--surface2); }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 60px 30px; }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .empty-sub { font-size: 14px; color: var(--text2); line-height: 1.5; }
+
+  /* ADD FRIEND MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s; padding: 20px;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    width: 100%; background: var(--surface); border-radius: 20px; border: 0.5px solid var(--border2);
+    padding: 24px 20px; transform: scale(0.95); transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .modal-cancel {
+    flex: 1; padding: 13px; background: var(--surface2); border: 0.5px solid var(--border);
+    border-radius: 12px; color: var(--text2); font-size: 15px; font-weight: 500;
+    font-family: inherit; cursor: pointer;
+  }
+  .modal-confirm {
+    flex: 1; padding: 13px; background: var(--green); border: none;
+    border-radius: 12px; color: #000; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+  }
+
+  /* INSTALL BANNER */
+  .install-banner {
+    background: var(--surface2); border: 0.5px solid var(--border2);
+    border-radius: 14px; margin: 10px 14px 0; padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px; animation: cardIn 0.4s ease;
+  }
+  .install-icon { font-size: 24px; flex-shrink: 0; }
+  .install-text { flex: 1; }
+  .install-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .install-sub { font-size: 11px; color: var(--text2); margin-top: 2px; line-height: 1.4; }
+  .install-close { color: var(--text3); font-size: 18px; cursor: pointer; padding: 4px; }
+
+  /* NOTIFICATION DOT */
+  .notif-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; flex-shrink: 0; }
+
+  .section-divider { padding: 8px 14px 4px; font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18A9 9 0 0012 3zm4.13 12.97a.56.56 0 01-.77.19c-2.1-1.28-4.75-1.57-7.87-.86a.56.56 0 01-.25-1.09c3.41-.78 6.34-.45 8.7 1a.56.56 0 01.19.76zm1.1-2.44a.7.7 0 01-.96.23c-2.4-1.48-6.07-1.9-8.91-1.04a.7.7 0 01-.41-1.34c3.25-.99 7.28-.51 10.05 1.19a.7.7 0 01.23.96zm.09-2.54C14.09 9.3 9.58 9.16 7.15 9.9a.84.84 0 01-.5-1.6c2.78-.87 7.4-.7 10.32 1.18a.84.84 0 01-.75 1.51z"/></svg>
+      </div>
+      <div class="logo-text">Sound<span>Drop</span></div>
+    </div>
+    <div class="header-actions">
+      <div class="icon-btn" onclick="showLegend()" title="Emoji Legend">📖</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" id="tab-feed" onclick="switchTab('feed')">🎵 Feed</div>
+    <div class="tab" id="tab-friends" onclick="switchTab('friends')">👥 Friends</div>
+    <div class="tab" id="tab-legend" onclick="switchTab('legend')">📖 Legend</div>
+  </div>
+
+  <!-- FEED TAB -->
+  <div id="view-feed" class="feed" style="display:flex; flex-direction:column;">
+    <div id="install-banner" class="install-banner">
+      <div class="install-icon">📲</div>
+      <div class="install-text">
+        <div class="install-title">Add to Home Screen</div>
+        <div class="install-sub">Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> in Safari for the full app experience</div>
+      </div>
+      <div class="install-close" onclick="closeBanner()">✕</div>
+    </div>
+    <div id="feed-list"></div>
+  </div>
+
+  <!-- FRIENDS TAB -->
+  <div id="view-friends" style="display:none; overflow-y:auto; flex:1; padding-bottom: calc(env(safe-area-inset-bottom) + 80px);">
+    <div class="friends-list" id="friends-list"></div>
+  </div>
+
+  <!-- LEGEND TAB -->
+  <div id="view-legend" style="display:none; overflow-y:auto; flex:1; padding-bottom: calc(env(safe-area-inset-bottom) + 30px);">
+    <div style="padding: 20px 14px 10px;">
+      <div style="font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px;">Emoji Legend</div>
+      <div style="font-size: 14px; color: var(--text2); margin-bottom: 20px;">Every reaction means something specific. Only these emojis can be used.</div>
+      <div class="legend-grid" id="full-legend"></div>
+    </div>
+    <div style="margin: 20px 14px; padding: 16px; background: var(--surface); border-radius: 16px; border: 0.5px solid var(--border);">
+      <div style="font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px;">The Rules</div>
+      <div style="font-size: 13px; color: var(--text2); line-height: 1.7;">
+        🎧 Only Spotify links can be shared<br>
+        💬 Add a note with your drop (optional)<br>
+        🎯 Only use the official emoji reactions<br>
+        🔁 You can react to your own drops<br>
+        👥 Everyone in your group can see all drops
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FAB: DROP A SONG -->
+<button class="fab" onclick="openSendPanel()" title="Drop a song" id="fab-btn">
+  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7-7 7 7"/></svg>
+</button>
+
+<!-- SEND PANEL -->
+<div class="send-panel" id="send-panel" onclick="closeSendPanel(event)">
+  <div class="send-sheet" id="send-sheet">
+    <div class="send-handle"></div>
+    <div class="send-title">Drop a Song 🎵</div>
+
+    <div class="field-group">
+      <div class="field-label">Spotify Link *</div>
+      <input class="text-input" id="spotify-input" type="url" placeholder="https://open.spotify.com/track/..." inputmode="url" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Your Note (optional)</div>
+      <input class="text-input" id="note-input" type="text" placeholder="this song been living rent free..." maxlength="120">
+    </div>
+
+    <div class="field-label" style="margin-bottom:10px;">Drop to Friends</div>
+    <div class="friend-chips" id="friend-chips"></div>
+
+    <button class="send-btn" id="send-btn" onclick="sendSong()">Drop it 🎵</button>
+  </div>
+</div>
+
+<!-- REACTION PICKER -->
+<div class="reaction-picker" id="reaction-picker" onclick="closeReactionPicker(event)">
+  <div class="picker-sheet">
+    <div class="picker-handle"></div>
+    <div class="picker-title">React with</div>
+    <div class="picker-grid" id="picker-grid"></div>
+  </div>
+</div>
+
+<!-- ADD FRIEND MODAL -->
+<div class="modal-overlay" id="add-friend-modal" onclick="closeAddFriend(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Add a Friend</div>
+    <div class="field-label" style="margin-bottom:8px;">Username</div>
+    <input class="text-input" id="new-friend-name" type="text" placeholder="e.g. Alex, Jordan, Sam..." maxlength="20">
+    <div class="field-label" style="margin-bottom:8px; margin-top:14px;">Vibe</div>
+    <input class="text-input" id="new-friend-vibe" type="text" placeholder="e.g. indie kid, rap head..." maxlength="30">
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeAddFriend()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmAddFriend()">Add ✓</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const EMOJIS = [
+  { emoji: '🔥', meaning: 'Fire', sub: 'This slaps hard' },
+  { emoji: '❤️', meaning: 'Love it', sub: 'Instant favourite' },
+  { emoji: '😭', meaning: 'Emotional', sub: 'Hits different' },
+  { emoji: '🔁', meaning: 'Heard before', sub: 'Already know this one' },
+  { emoji: '💀', meaning: 'Too good', sub: 'Killed me' },
+  { emoji: '🤔', meaning: 'Not sure', sub: 'Give it another listen' },
+  { emoji: '😴', meaning: 'Mid', sub: 'Not feeling it' },
+  { emoji: '🎯', meaning: 'Perfect drop', sub: 'Right song right time' },
+  { emoji: '🆕', meaning: 'New to me', sub: 'First time hearing this' },
+  { emoji: '🙅', meaning: 'No thanks', sub: 'Not my vibe' },
+  { emoji: '🤯', meaning: 'Mind blown', sub: 'How did I not know this' },
+  { emoji: '📌', meaning: 'Saving this', sub: 'Adding to playlist' },
+];
+
+const AVATAR_COLORS = [
+  '#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#C77DFF','#FF9F43','#54A0FF','#FF6348','#2ed573','#ffa502'
+];
+
+function getColor(str) {
+  let h = 0; for (let c of str) h = (h*31+c.charCodeAt(0))%AVATAR_COLORS.length;
+  return AVATAR_COLORS[h];
+}
+
+function initials(name) { return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+function relativeTime(ts) {
+  const d = Date.now()-ts, m=60000,h=3600000,dy=86400000;
+  if(d<m) return 'just now';
+  if(d<h) return Math.floor(d/m)+'m ago';
+  if(d<dy) return Math.floor(d/h)+'h ago';
+  return Math.floor(d/dy)+'d ago';
+}
+
+// --- STATE ---
+let state = JSON.parse(localStorage.getItem('sounddrop_v2')||'null') || {
+  me: 'You',
+  friends: [
+    { name: 'Alex', vibe: 'indie kid', active: true },
+    { name: 'Jordan', vibe: 'rap head', active: true },
+    { name: 'Sam', vibe: 'everything', active: false },
+  ],
+  drops: [
+    {
+      id: 1, sender: 'Alex', ts: Date.now()-3600000*2,
+      spotifyUrl: 'https://open.spotify.com/track/4iZ4pt7kvcaH6Yo8UoZ4s2',
+      trackName: 'good 4 u', artist: 'Olivia Rodrigo', note: 'this one goes crazy trust',
+      reactions: { '🔥': ['Jordan','Sam'], '😭': ['Sam'], '🔁': ['Alex'] }
+    },
+    {
+      id: 2, sender: 'Jordan', ts: Date.now()-3600000*5,
+      spotifyUrl: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b',
+      trackName: 'Blinding Lights', artist: 'The Weeknd', note: null,
+      reactions: { '🔁': ['Alex','You'], '🔥': ['Sam'] }
+    },
+    {
+      id: 3, sender: 'You', ts: Date.now()-3600000*8,
+      spotifyUrl: 'https://open.spotify.com/track/7qiZfU4dY1lWllzX7mPBI3',
+      trackName: 'Shape of You', artist: 'Ed Sheeran', note: 'been stuck in my head all week',
+      reactions: { '🔁': ['Alex','Jordan','Sam'], '😴': ['Jordan'] }
+    },
+  ],
+  nextId: 4,
+};
+
+function save() { localStorage.setItem('sounddrop_v2', JSON.stringify(state)); }
+
+// --- SPOTIFY EMBED ---
+function spotifyEmbedId(url) {
+  const m = url.match(/spotify\.com\/(track|album|playlist|episode)\/([A-Za-z0-9]+)/);
+  return m ? { type: m[1], id: m[2] } : null;
+}
+
+function renderCard(drop) {
+  const color = getColor(drop.sender);
+  const sp = spotifyEmbedId(drop.spotifyUrl);
+  const embedHtml = sp
+    ? `<div class="spotify-embed"><iframe src="https://open.spotify.com/embed/${sp.type}/${sp.id}?utm_source=generator&theme=0" height="80" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>`
+    : `<div class="spotify-embed"><div class="spotify-fallback" onclick="window.open('${drop.spotifyUrl}','_blank')">
+        <div class="spotify-art">🎵</div>
+        <div class="spotify-info">
+          <div class="spotify-track">${drop.trackName||'Open in Spotify'}</div>
+          <div class="spotify-artist">${drop.artist||''}</div>
+          <div class="spotify-logo"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18A9 9 0 0012 3zm4.13 12.97a.56.56 0 01-.77.19c-2.1-1.28-4.75-1.57-7.87-.86a.56.56 0 01-.25-1.09c3.41-.78 6.34-.45 8.7 1a.56.56 0 01.19.76zm1.1-2.44a.7.7 0 01-.96.23c-2.4-1.48-6.07-1.9-8.91-1.04a.7.7 0 01-.41-1.34c3.25-.99 7.28-.51 10.05 1.19a.7.7 0 01.23.96zm.09-2.54C14.09 9.3 9.58 9.16 7.15 9.9a.84.84 0 01-.5-1.6c2.78-.87 7.4-.7 10.32 1.18a.84.84 0 01-.75 1.51z"/></svg><span>Open Spotify</span></div>
+        </div>
+      </div></div>`;
+
+  const rxHtml = Object.entries(drop.reactions)
+    .filter(([e,u])=>u.length>0)
+    .map(([e,users])=>{
+      const mine = users.includes(state.me);
+      return `<div class="reaction-chip${mine?' mine':''}" onclick="toggleReaction(${drop.id},'${e}')" title="${EMOJIS.find(x=>x.emoji===e)?.meaning||e}">
+        <span>${e}</span><span class="reaction-count">${users.length}</span>
+      </div>`;
+    }).join('');
+
+  return `<div class="song-card" id="card-${drop.id}">
+    <div class="card-header">
+      <div class="avatar" style="background:${color}22;color:${color}">${initials(drop.sender)}</div>
+      <div class="card-meta">
+        <div class="card-sender">${drop.sender === state.me ? 'You' : drop.sender}</div>
+        <div class="card-time">${relativeTime(drop.ts)}</div>
+      </div>
+    </div>
+    ${drop.note ? `<div class="card-note">"${drop.note}"</div>` : ''}
+    ${embedHtml}
+    <div class="reactions-row">
+      ${rxHtml}
+      <div class="add-reaction-btn" onclick="openReactionPicker(${drop.id})" title="Add reaction">+</div>
+    </div>
+  </div>`;
+}
+
+function renderFeed() {
+  const sorted = [...state.drops].sort((a,b)=>b.ts-a.ts);
+  const el = document.getElementById('feed-list');
+  el.innerHTML = sorted.length ? sorted.map(renderCard).join('') :
+    `<div class="empty"><div class="empty-icon">🎵</div><div class="empty-title">No drops yet</div><div class="empty-sub">Be the first to drop a song!</div></div>`;
+}
+
+function renderFriends() {
+  const el = document.getElementById('friends-list');
+  el.innerHTML = state.friends.map(f=>{
+    const color = getColor(f.name);
+    const dropCount = state.drops.filter(d=>d.sender===f.name).length;
+    return `<div class="friend-row">
+      <div class="friend-avatar" style="background:${color}22;color:${color}">${initials(f.name)}</div>
+      <div class="friend-info">
+        <div class="friend-name">${f.name}</div>
+        <div class="friend-stats">${f.vibe} · ${dropCount} drop${dropCount!==1?'s':''}</div>
+      </div>
+      ${f.active?'<div class="friend-status" title="Active recently"></div>':''}
+    </div>`;
+  }).join('') +
+  `<button class="add-friend-btn" onclick="openAddFriend()">＋ Add friend</button>`;
+}
+
+function renderLegend() {
+  document.getElementById('full-legend').innerHTML = EMOJIS.map(e=>
+    `<div class="legend-item">
+      <div class="legend-emoji">${e.emoji}</div>
+      <div class="legend-info">
+        <div class="legend-meaning">${e.meaning}</div>
+        <div class="legend-sub">${e.sub}</div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+// --- TAB SWITCHING ---
+let currentTab = 'feed';
+function switchTab(tab) {
+  ['feed','friends','legend'].forEach(t=>{
+    document.getElementById(`view-${t}`).style.display = 'none';
+    document.getElementById(`tab-${t}`).classList.remove('active');
+  });
+  document.getElementById(`view-${tab}`).style.display = 'flex';
+  document.getElementById(`view-${tab}`).style.flexDirection = 'column';
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  document.getElementById('fab-btn').style.display = tab==='feed' ? 'flex' : 'none';
+  currentTab = tab;
+  if(tab==='friends') renderFriends();
+  if(tab==='legend') renderLegend();
+}
+
+// --- SEND PANEL ---
+function openSendPanel() {
+  const chips = document.getElementById('friend-chips');
+  chips.innerHTML = state.friends.map(f=>{
+    const color = getColor(f.name);
+    return `<div class="friend-chip selected" id="chip-${f.name}" onclick="toggleFriendChip('${f.name}')">
+      <div class="friend-chip-avatar" style="background:${color}22;color:${color}">${initials(f.name)}</div>
+      <div class="friend-chip-name">${f.name}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('spotify-input').value='';
+  document.getElementById('note-input').value='';
+  document.getElementById('send-panel').classList.add('open');
+}
+
+function closeSendPanel(e) {
+  if(!e || e.target===document.getElementById('send-panel'))
+    document.getElementById('send-panel').classList.remove('open');
+}
+
+function toggleFriendChip(name) {
+  document.getElementById(`chip-${name}`).classList.toggle('selected');
+}
+
+function sendSong() {
+  const url = document.getElementById('spotify-input').value.trim();
+  if(!url || !url.includes('spotify.com')) {
+    document.getElementById('spotify-input').style.borderColor='#ff4444';
+    setTimeout(()=>document.getElementById('spotify-input').style.borderColor='',1500);
+    return;
+  }
+  const note = document.getElementById('note-input').value.trim();
+  const sp = spotifyEmbedId(url);
+  const drop = {
+    id: state.nextId++, sender: state.me, ts: Date.now(),
+    spotifyUrl: url,
+    trackName: sp ? 'Spotify ' + sp.type : 'Track',
+    artist: '', note: note||null, reactions: {}
+  };
+  state.drops.unshift(drop);
+  save();
+  closeSendPanel();
+  switchTab('feed');
+  renderFeed();
+  setTimeout(()=>{
+    const card = document.getElementById(`card-${drop.id}`);
+    if(card) card.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
+}
+
+// --- REACTIONS ---
+let pickerTargetId = null;
+function openReactionPicker(dropId) {
+  pickerTargetId = dropId;
+  const drop = state.drops.find(d=>d.id===dropId);
+  document.getElementById('picker-grid').innerHTML = EMOJIS.map(e=>{
+    const users = drop.reactions[e.emoji]||[];
+    const mine = users.includes(state.me);
+    return `<div class="picker-item${mine?' mine':''}" onclick="selectReaction('${e.emoji}')">
+      <div class="picker-emoji">${e.emoji}</div>
+      <div class="picker-label">${e.meaning}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('reaction-picker').classList.add('open');
+}
+
+function closeReactionPicker(e) {
+  if(!e||e.target===document.getElementById('reaction-picker'))
+    document.getElementById('reaction-picker').classList.remove('open');
+}
+
+function selectReaction(emoji) {
+  if(pickerTargetId!==null) toggleReaction(pickerTargetId, emoji);
+  document.getElementById('reaction-picker').classList.remove('open');
+}
+
+function toggleReaction(dropId, emoji) {
+  const drop = state.drops.find(d=>d.id===dropId);
+  if(!drop) return;
+  if(!drop.reactions[emoji]) drop.reactions[emoji]=[];
+  const idx = drop.reactions[emoji].indexOf(state.me);
+  if(idx>=0) drop.reactions[emoji].splice(idx,1);
+  else drop.reactions[emoji].push(state.me);
+  save(); renderFeed();
+}
+
+// --- FRIENDS ---
+function openAddFriend() { document.getElementById('add-friend-modal').classList.add('open'); }
+function closeAddFriend(e) {
+  if(!e||e.target===document.getElementById('add-friend-modal'))
+    document.getElementById('add-friend-modal').classList.remove('open');
+}
+function confirmAddFriend() {
+  const name = document.getElementById('new-friend-name').value.trim();
+  const vibe = document.getElementById('new-friend-vibe').value.trim();
+  if(!name) return;
+  if(state.friends.find(f=>f.name.toLowerCase()===name.toLowerCase())) {
+    closeAddFriend(); return;
+  }
+  state.friends.push({name, vibe: vibe||'music lover', active:false});
+  save(); renderFriends(); closeAddFriend();
+  document.getElementById('new-friend-name').value='';
+  document.getElementById('new-friend-vibe').value='';
+}
+
+function showLegend() { switchTab('legend'); }
+function closeBanner() { document.getElementById('install-banner').style.display='none'; }
+
+// INIT
+renderFeed();
+renderLegend();
+
+// Auto-refresh relative times
+setInterval(()=>{ if(currentTab==='feed') renderFeed(); }, 60000);
+
+// Prevent double-tap zoom on iOS
+document.addEventListener('touchend', e=>{ if(e.target.tagName==='BUTTON'||e.target.closest('button')||e.target.closest('.fab')||e.target.closest('.reaction-chip')||e.target.closest('.picker-item')) e.preventDefault(); }, {passive:false});
+</script>
+</body>
+</html>
